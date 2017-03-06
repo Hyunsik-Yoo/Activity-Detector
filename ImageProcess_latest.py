@@ -54,6 +54,27 @@ def get_split_point(input_list):
     list_split_point.append(len(input_list)-1)
     return list_split_point
 
+def get_speed_index_of_first_activity(list_similarity):
+    # 리스트를 역순으로 뒤집어 액티비티 로딩 완료 후 움직이지 않는 스크린샷 제거
+    list_similarity.reverse()
+    last_shot_index = 0
+    for index in range(len(list_similarity)):
+        if list_similarity[index][2] >= 0.8:
+            last_shot_index = index
+        else:
+            last_shot_index = last_shot_index + len(list_similarity) - 1
+            break
+    print('lst_shot_index : ' + str(last_shot_index))
+    # 다시 원래대로 뒤집어서 로딩완료직후까지의 speed index 구하기
+    list_similarity.reverse()
+    speed_index = 0
+    speed_index_list = []
+    for index in range(last_shot_index+1):
+        speed_index_list.append(list_similarity[index][1].split('.jpg')[0][-3:])
+        speed_index += (1 - list_similarity[index][2])
+
+    return [[speed_index_list, speed_index]]
+
 def get_speed_index(list_similarity, list_split_point):
     intevel = 1
     latest_index = 0
@@ -64,7 +85,7 @@ def get_speed_index(list_similarity, list_split_point):
         for index in range(latest_index, split_point+1):
             if(list_similarity[index][2] >= 0.8): #남은 여유시간 제거
                 continue
-            speed_index.append(list_similarity[index][1].split('.png')[0][-3:])
+            speed_index.append(list_similarity[index][1].split('.jpg')[0][-3:])
             sum_of_speed += intevel * (1 - list_similarity[index][2])
         list_speed.append([speed_index, sum_of_speed])
         sum_of_speed = 0
@@ -86,7 +107,7 @@ def run_ffmpeg(video_name):
         raise e
 
     # ffmpeg 실행
-    command = '~/Downloads/ffmpeg-3.2.2/ffmpeg -i ' + str(video_name) + '.mp4 -vf fps=1 ' + str(video_name) + '/out%03d.png' 
+    command = '~/Downloads/ffmpeg-3.2.2/ffmpeg -i ' + str(video_name) + '.mp4 -vf fps=1 ' + str(video_name) + '/out%03d.jpg' 
     try:
         ffmpeg = subprocess.check_call(command, stdout=subprocess.PIPE, shell=True)
     except Exception as e:
@@ -103,10 +124,10 @@ def list_mp4(path):
             result.append(f.split('.mp4')[0])
     return result
 
-def list_png(path):
+def list_jpg(path):
     result = []
     for f in os.listdir(path):
-        if f.endswith('.png'):
+        if f.endswith('.jpg'):
             result.append(path + f)
     return result
 
@@ -154,14 +175,22 @@ def main():
             logging.error(e + ' : run_ffmpeg error')
             raise e
         
-        files_list = list_png(video_name+'/')
+        files_list = list_jpg(video_name+'/')
 
+        """
         list_similarity = get_similarity_list(files_list)
         logging.info(video_name + ' list_similarity : ' + list_similarity)
         list_split_point = get_split_point(list_similarity)
         logging.info(video_name + ' list_split_point : ' + list_split_point)
         speed_list = get_speed_index(list_similarity, list_split_point)
         logging.info(video_name + ' speed_list : ' + speed_list)
+        write2csv(video_name, speed_list)
+        """
+
+        list_similarity = get_similarity_list(files_list)
+        logging.info(video_name + ' list_similarity : ' + str(list_similarity))
+        speed_list = get_speed_index_of_first_activity(list_similarity)
+        logging.info(video_name + ' speed_list : ' + str(speed_list))
         write2csv(video_name, speed_list)
 
 if __name__ == '__main__':
