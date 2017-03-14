@@ -62,9 +62,10 @@ def get_speed_index_of_first_activity(list_similarity):
         if list_similarity[index][2] >= 0.8:
             last_shot_index = index
         else:
-            last_shot_index = last_shot_index + len(list_similarity) - 1
+            print(last_shot_index)
+            last_shot_index = len(list_similarity) - last_shot_index -1
             break
-    print('lst_shot_index : ' + str(last_shot_index))
+    print('last_shot_index : ' + str(last_shot_index))
     # 다시 원래대로 뒤집어서 로딩완료직후까지의 speed index 구하기
     list_similarity.reverse()
     speed_index = 0
@@ -107,7 +108,7 @@ def run_ffmpeg(video_name):
         raise e
 
     # ffmpeg 실행
-    command = '~/Downloads/ffmpeg-3.2.2/ffmpeg -i ' + str(video_name) + '.mp4 -vf fps=1 ' + str(video_name) + '/out%03d.jpg' 
+    command = 'ffmpeg -i ' + str(video_name) + '.mp4 -vf fps=1 ' + str(video_name) + '/out%03d.jpg' 
     try:
         ffmpeg = subprocess.check_call(command, stdout=subprocess.PIPE, shell=True)
     except Exception as e:
@@ -149,6 +150,9 @@ def get_similarity_list(files_list):
     return list_similarity
 
 def write2csv(app_name, speed_list):
+    if len(speed_list) == 0:
+        logging.info(app_name + ' len(speed_list) is 0')
+        return
     csv = open('speed_result.csv','a')
 
     for speed_row in speed_list:
@@ -176,6 +180,7 @@ def main():
             continue
         
         files_list = list_jpg(video_name+'/')
+        files_list.sort()
 
         """
         list_similarity = get_similarity_list(files_list)
