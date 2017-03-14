@@ -172,8 +172,8 @@ def main():
             if not(run_ffmpeg(video_name)):
                 raise Exception
         except Exception as e:
-            logging.error(e + ' : run_ffmpeg error')
-            raise e
+            logging.error(video_name + ' : run_ffmpeg error')
+            continue
         
         files_list = list_jpg(video_name+'/')
 
